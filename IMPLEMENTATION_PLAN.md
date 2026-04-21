@@ -122,25 +122,25 @@ Goal: Build the fast data-plane evaluator described in the document.
 
 Goal: Add the lock-free, read-optimized data plane store.
 
-- [ ] Define immutable `Store`:
-  - [ ] `map[string]*CompiledFlag`
-- [ ] Add atomic holder:
-  - [ ] `atomic.Value` storing `*Store`
-- [ ] Implement store load:
-  - [ ] `Current() *Store`
-- [ ] Implement atomic replacement:
-  - [ ] `Swap(newStore *Store)`
-- [ ] Ensure live stores are never mutated after publication.
-- [ ] Add lookup method:
-  - [ ] `GetFlag(key string) (*CompiledFlag, bool)`
-- [ ] Add service method:
-  - [ ] `Evaluate(flagKey string, ctx Context) variant`
-- [ ] Add concurrency tests with `go test -race`.
-- [ ] Test that reads continue while swaps happen.
-- [ ] Add benchmark for:
-  - [ ] atomic load
-  - [ ] map lookup
-  - [ ] evaluation
+- [x] Define immutable `Store`:
+  - [x] `map[string]*CompiledFlag`
+- [x] Add atomic holder:
+  - [x] `atomic.Value` storing `*Store`
+- [x] Implement store load:
+  - [x] `Current() *Store`
+- [x] Implement atomic replacement:
+  - [x] `Swap(newStore *Store)`
+- [x] Ensure live stores are never mutated after publication.
+- [x] Add lookup method:
+  - [x] `GetFlag(key string) (*CompiledFlag, bool)`
+- [x] Add service method:
+  - [x] `Evaluate(flagKey string, ctx Context) variant`
+- [x] Add concurrency tests with `go test -race`.
+- [x] Test that reads continue while swaps happen.
+- [x] Add benchmark for:
+  - [x] atomic load
+  - [x] map lookup
+  - [x] evaluation
 
 ## Phase 5: PostgreSQL Persistence
 

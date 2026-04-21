@@ -23,6 +23,7 @@ Phase 1 is the project foundation, and Phase 1.5 adds Dockerized local developme
 - Control-plane domain models and validation added.
 - Compiled evaluation engine added with deterministic bucketing.
 - API validation errors are mapped to a structured response shape.
+- Immutable in-memory store and atomic swaps added.
 
 ## Project Layout
 
@@ -109,6 +110,40 @@ postgres://launchdarkly:launchdarkly@postgres:5432/launchdarkly?sslmode=disable
 ```
 
 PostgreSQL data is stored in a named Docker volume called `launchdarkly_postgres-data`.
+
+## Evaluation Example
+
+```go
+flag := domain.Flag{
+	Key:     "checkout",
+	Enabled: true,
+	Default: "off",
+	Variants: []domain.Variant{
+		{Name: "off", Weight: 50},
+		{Name: "on", Weight: 50},
+	},
+	Rules: []domain.Rule{
+		{
+			Attribute: "country",
+			Operator:  domain.OperatorEq,
+			Values:    []string{"BR"},
+			Variant:   "on",
+			Priority:  1,
+		},
+	},
+	Version: 1,
+}
+
+compiled, err := eval.CompileFlag(flag)
+if err != nil {
+	// handle validation/compile error
+}
+
+variant := eval.Evaluate(compiled, &domain.Context{
+	UserID:  "123",
+	Country: "BR",
+})
+```
 
 ## Test
 

@@ -6,26 +6,26 @@ This plan is based on the architecture described in `documentation.md`: a Go fea
 
 Goal: Create the base Go service and architecture boundaries.
 
-- [ ] Initialize Go module.
-- [ ] Create basic project layout:
-  - [ ] `cmd/server`
-  - [ ] `internal/domain`
-  - [ ] `internal/eval`
-  - [ ] `internal/store`
-  - [ ] `internal/control`
-  - [ ] `internal/api`
-  - [ ] `internal/sync`
-  - [ ] `internal/db`
-- [ ] Add configuration loading for database URL, port, and sync interval.
-- [ ] Add basic HTTP server.
-- [ ] Add health endpoint:
-  - [ ] `GET /health`
-- [ ] Add structured error response format.
-- [ ] Add initial README explaining control plane vs data plane.
-- [ ] Add Makefile or task commands:
-  - [ ] `make test`
-  - [ ] `make run`
-  - [ ] `make bench`
+- [x] Initialize Go module.
+- [x] Create basic project layout:
+  - [x] `cmd/server`
+  - [x] `internal/domain`
+  - [x] `internal/eval`
+  - [x] `internal/store`
+  - [x] `internal/control`
+  - [x] `internal/api`
+  - [x] `internal/sync`
+  - [x] `internal/db`
+- [x] Add configuration loading for database URL, port, and sync interval.
+- [x] Add basic HTTP server.
+- [x] Add health endpoint:
+  - [x] `GET /health`
+- [x] Add structured error response format.
+- [x] Add initial README explaining control plane vs data plane.
+- [x] Add Makefile or task commands:
+  - [x] `make test`
+  - [x] `make run`
+  - [x] `make bench`
 
 ## Phase 2: Domain Model and Validation
 

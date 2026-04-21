@@ -56,91 +56,91 @@ Goal: Make the service and its dependencies runnable in a consistent local envir
 
 Goal: Implement the source-of-truth models used by the control plane.
 
-- [ ] Define control-plane models:
-  - [ ] `Flag`
-  - [ ] `Variant`
-  - [ ] `Rule`
-  - [ ] `Context`
-- [ ] Include required fields:
-  - [ ] flag key
-  - [ ] enabled state
-  - [ ] default variant
-  - [ ] variants
-  - [ ] rollout weights
-  - [ ] rules
-  - [ ] version
-- [ ] Add validation rules:
-  - [ ] flag key is required
-  - [ ] default variant exists
-  - [ ] variant names are unique
-  - [ ] weights are non-negative
-  - [ ] weights sum to expected total, likely `100`
-  - [ ] rule operators are supported
-  - [ ] rule variants exist
-  - [ ] rule priorities are valid
-- [ ] Add unit tests for valid and invalid configs.
-- [ ] Keep validation out of the hot evaluation path.
+- [x] Define control-plane models:
+  - [x] `Flag`
+  - [x] `Variant`
+  - [x] `Rule`
+  - [x] `Context`
+- [x] Include required fields:
+  - [x] flag key
+  - [x] enabled state
+  - [x] default variant
+  - [x] variants
+  - [x] rollout weights
+  - [x] rules
+  - [x] version
+- [x] Add validation rules:
+  - [x] flag key is required
+  - [x] default variant exists
+  - [x] variant names are unique
+  - [x] weights are non-negative
+  - [x] weights sum to expected total, likely `100`
+  - [x] rule operators are supported
+  - [x] rule variants exist
+  - [x] rule priorities are valid
+- [x] Add unit tests for valid and invalid configs.
+- [x] Keep validation out of the hot evaluation path.
 
 ## Phase 3: Compiled Evaluation Engine
 
 Goal: Build the fast data-plane evaluator described in the document.
 
-- [ ] Define runtime models separate from DB/control models:
-  - [ ] `CompiledFlag`
-  - [ ] `CompiledRule`
-  - [ ] `WeightedVariant`
-- [ ] Implement compiler:
-  - [ ] `Flag -> CompiledFlag`
-- [ ] Compile rules into executable match logic.
-- [ ] Support initial operators:
-  - [ ] `eq`
-  - [ ] `in`
-- [ ] Sort rules by priority during compilation.
-- [ ] Precompute total rollout weight.
-- [ ] Implement deterministic bucketing:
-  - [ ] hash `user_id`
-  - [ ] hash `flag_key`
-  - [ ] avoid string concatenation where practical
-- [ ] Implement weighted variant selection.
-- [ ] Implement evaluator:
-  - [ ] disabled flag returns default
-  - [ ] matching rule returns rule variant
-  - [ ] missing user ID returns default
-  - [ ] rollout fallback uses stable hash
-- [ ] Add unit tests for:
-  - [ ] disabled flags
-  - [ ] default behavior
-  - [ ] rule matching
-  - [ ] rule priority
-  - [ ] deterministic bucketing
-  - [ ] weighted rollout
-  - [ ] missing user ID
-- [ ] Add benchmark tests with `go test -bench=. -benchmem`.
-- [ ] Target near-zero allocations in evaluator benchmarks.
+- [x] Define runtime models separate from DB/control models:
+  - [x] `CompiledFlag`
+  - [x] `CompiledRule`
+  - [x] `WeightedVariant`
+- [x] Implement compiler:
+  - [x] `Flag -> CompiledFlag`
+- [x] Compile rules into executable match logic.
+- [x] Support initial operators:
+  - [x] `eq`
+  - [x] `in`
+- [x] Sort rules by priority during compilation.
+- [x] Precompute total rollout weight.
+- [x] Implement deterministic bucketing:
+  - [x] hash `user_id`
+  - [x] hash `flag_key`
+  - [x] avoid string concatenation where practical
+- [x] Implement weighted variant selection.
+- [x] Implement evaluator:
+  - [x] disabled flag returns default
+  - [x] matching rule returns rule variant
+  - [x] missing user ID returns default
+  - [x] rollout fallback uses stable hash
+- [x] Add unit tests for:
+  - [x] disabled flags
+  - [x] default behavior
+  - [x] rule matching
+  - [x] rule priority
+  - [x] deterministic bucketing
+  - [x] weighted rollout
+  - [x] missing user ID
+- [x] Add benchmark tests with `go test -bench=. -benchmem`.
+- [x] Target near-zero allocations in evaluator benchmarks.
 
 ## Phase 4: Immutable In-Memory Store
 
 Goal: Add the lock-free, read-optimized data plane store.
 
-- [ ] Define immutable `Store`:
-  - [ ] `map[string]*CompiledFlag`
-- [ ] Add atomic holder:
-  - [ ] `atomic.Value` storing `*Store`
-- [ ] Implement store load:
-  - [ ] `Current() *Store`
-- [ ] Implement atomic replacement:
-  - [ ] `Swap(newStore *Store)`
-- [ ] Ensure live stores are never mutated after publication.
-- [ ] Add lookup method:
-  - [ ] `GetFlag(key string) (*CompiledFlag, bool)`
-- [ ] Add service method:
-  - [ ] `Evaluate(flagKey string, ctx Context) variant`
-- [ ] Add concurrency tests with `go test -race`.
-- [ ] Test that reads continue while swaps happen.
-- [ ] Add benchmark for:
-  - [ ] atomic load
-  - [ ] map lookup
-  - [ ] evaluation
+- [x] Define immutable `Store`:
+  - [x] `map[string]*CompiledFlag`
+- [x] Add atomic holder:
+  - [x] `atomic.Value` storing `*Store`
+- [x] Implement store load:
+  - [x] `Current() *Store`
+- [x] Implement atomic replacement:
+  - [x] `Swap(newStore *Store)`
+- [x] Ensure live stores are never mutated after publication.
+- [x] Add lookup method:
+  - [x] `GetFlag(key string) (*CompiledFlag, bool)`
+- [x] Add service method:
+  - [x] `Evaluate(flagKey string, ctx Context) variant`
+- [x] Add concurrency tests with `go test -race`.
+- [x] Test that reads continue while swaps happen.
+- [x] Add benchmark for:
+  - [x] atomic load
+  - [x] map lookup
+  - [x] evaluation
 
 ## Phase 5: PostgreSQL Persistence
 
@@ -178,6 +178,7 @@ Goal: Expose CRUD APIs for managing flags.
   - [ ] `GET /flags/:key`
   - [ ] `DELETE /flags/:key`
 - [ ] Validate request payloads before persistence.
+- [x] Add reusable API-level validation response mapping before admin handlers.
 - [ ] Return validation errors clearly.
 - [ ] Increment version on updates.
 - [ ] Trigger data-plane refresh after successful writes.

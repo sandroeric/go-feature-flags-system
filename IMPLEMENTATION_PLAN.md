@@ -56,30 +56,30 @@ Goal: Make the service and its dependencies runnable in a consistent local envir
 
 Goal: Implement the source-of-truth models used by the control plane.
 
-- [ ] Define control-plane models:
-  - [ ] `Flag`
-  - [ ] `Variant`
-  - [ ] `Rule`
-  - [ ] `Context`
-- [ ] Include required fields:
-  - [ ] flag key
-  - [ ] enabled state
-  - [ ] default variant
-  - [ ] variants
-  - [ ] rollout weights
-  - [ ] rules
-  - [ ] version
-- [ ] Add validation rules:
-  - [ ] flag key is required
-  - [ ] default variant exists
-  - [ ] variant names are unique
-  - [ ] weights are non-negative
-  - [ ] weights sum to expected total, likely `100`
-  - [ ] rule operators are supported
-  - [ ] rule variants exist
-  - [ ] rule priorities are valid
-- [ ] Add unit tests for valid and invalid configs.
-- [ ] Keep validation out of the hot evaluation path.
+- [x] Define control-plane models:
+  - [x] `Flag`
+  - [x] `Variant`
+  - [x] `Rule`
+  - [x] `Context`
+- [x] Include required fields:
+  - [x] flag key
+  - [x] enabled state
+  - [x] default variant
+  - [x] variants
+  - [x] rollout weights
+  - [x] rules
+  - [x] version
+- [x] Add validation rules:
+  - [x] flag key is required
+  - [x] default variant exists
+  - [x] variant names are unique
+  - [x] weights are non-negative
+  - [x] weights sum to expected total, likely `100`
+  - [x] rule operators are supported
+  - [x] rule variants exist
+  - [x] rule priorities are valid
+- [x] Add unit tests for valid and invalid configs.
+- [x] Keep validation out of the hot evaluation path.
 
 ## Phase 3: Compiled Evaluation Engine
 

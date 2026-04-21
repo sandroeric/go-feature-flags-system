@@ -20,6 +20,7 @@ Phase 1 is the project foundation, and Phase 1.5 adds Dockerized local developme
 - Make targets added for running, testing, formatting, and benchmarking.
 - Dockerfile added for the API service.
 - Docker Compose added for the API and PostgreSQL.
+- Control-plane domain models and validation added.
 
 ## Project Layout
 

@@ -85,38 +85,38 @@ Goal: Implement the source-of-truth models used by the control plane.
 
 Goal: Build the fast data-plane evaluator described in the document.
 
-- [ ] Define runtime models separate from DB/control models:
-  - [ ] `CompiledFlag`
-  - [ ] `CompiledRule`
-  - [ ] `WeightedVariant`
-- [ ] Implement compiler:
-  - [ ] `Flag -> CompiledFlag`
-- [ ] Compile rules into executable match logic.
-- [ ] Support initial operators:
-  - [ ] `eq`
-  - [ ] `in`
-- [ ] Sort rules by priority during compilation.
-- [ ] Precompute total rollout weight.
-- [ ] Implement deterministic bucketing:
-  - [ ] hash `user_id`
-  - [ ] hash `flag_key`
-  - [ ] avoid string concatenation where practical
-- [ ] Implement weighted variant selection.
-- [ ] Implement evaluator:
-  - [ ] disabled flag returns default
-  - [ ] matching rule returns rule variant
-  - [ ] missing user ID returns default
-  - [ ] rollout fallback uses stable hash
-- [ ] Add unit tests for:
-  - [ ] disabled flags
-  - [ ] default behavior
-  - [ ] rule matching
-  - [ ] rule priority
-  - [ ] deterministic bucketing
-  - [ ] weighted rollout
-  - [ ] missing user ID
-- [ ] Add benchmark tests with `go test -bench=. -benchmem`.
-- [ ] Target near-zero allocations in evaluator benchmarks.
+- [x] Define runtime models separate from DB/control models:
+  - [x] `CompiledFlag`
+  - [x] `CompiledRule`
+  - [x] `WeightedVariant`
+- [x] Implement compiler:
+  - [x] `Flag -> CompiledFlag`
+- [x] Compile rules into executable match logic.
+- [x] Support initial operators:
+  - [x] `eq`
+  - [x] `in`
+- [x] Sort rules by priority during compilation.
+- [x] Precompute total rollout weight.
+- [x] Implement deterministic bucketing:
+  - [x] hash `user_id`
+  - [x] hash `flag_key`
+  - [x] avoid string concatenation where practical
+- [x] Implement weighted variant selection.
+- [x] Implement evaluator:
+  - [x] disabled flag returns default
+  - [x] matching rule returns rule variant
+  - [x] missing user ID returns default
+  - [x] rollout fallback uses stable hash
+- [x] Add unit tests for:
+  - [x] disabled flags
+  - [x] default behavior
+  - [x] rule matching
+  - [x] rule priority
+  - [x] deterministic bucketing
+  - [x] weighted rollout
+  - [x] missing user ID
+- [x] Add benchmark tests with `go test -bench=. -benchmem`.
+- [x] Target near-zero allocations in evaluator benchmarks.
 
 ## Phase 4: Immutable In-Memory Store
 
@@ -178,6 +178,7 @@ Goal: Expose CRUD APIs for managing flags.
   - [ ] `GET /flags/:key`
   - [ ] `DELETE /flags/:key`
 - [ ] Validate request payloads before persistence.
+- [x] Add reusable API-level validation response mapping before admin handlers.
 - [ ] Return validation errors clearly.
 - [ ] Increment version on updates.
 - [ ] Trigger data-plane refresh after successful writes.

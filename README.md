@@ -21,6 +21,8 @@ Phase 1 is the project foundation, and Phase 1.5 adds Dockerized local developme
 - Dockerfile added for the API service.
 - Docker Compose added for the API and PostgreSQL.
 - Control-plane domain models and validation added.
+- Compiled evaluation engine added with deterministic bucketing.
+- API validation errors are mapped to a structured response shape.
 
 ## Project Layout
 
@@ -120,4 +122,4 @@ make test
 make bench
 ```
 
-Benchmarks become more meaningful once the evaluation engine exists in Phase 3.
+Current evaluator benchmarks target zero allocations in the hot path.

@@ -9,7 +9,7 @@ The core architectural goal is to keep all database access, validation, parsing,
 
 ## Current Status
 
-Phase 1 is the project foundation:
+Phase 1 is the project foundation, and Phase 1.5 adds Dockerized local development:
 
 - Go module initialized.
 - Basic package layout created.
@@ -18,6 +18,8 @@ Phase 1 is the project foundation:
 - Health endpoint added.
 - Structured JSON error responses added.
 - Make targets added for running, testing, formatting, and benchmarking.
+- Dockerfile added for the API service.
+- Docker Compose added for the API and PostgreSQL.
 
 ## Project Layout
 
@@ -65,6 +67,45 @@ Expected response:
   "status": "ok"
 }
 ```
+
+## Docker
+
+Run the API and PostgreSQL together:
+
+```bash
+make docker-up
+```
+
+Check the API:
+
+```bash
+curl http://localhost:8080/health
+```
+
+Follow API logs:
+
+```bash
+make docker-logs
+```
+
+Stop the local environment:
+
+```bash
+make docker-down
+```
+
+The Compose environment starts:
+
+- API on `localhost:8080`
+- PostgreSQL on `localhost:5432`
+
+The API receives this database URL inside the Compose network:
+
+```text
+postgres://launchdarkly:launchdarkly@postgres:5432/launchdarkly?sslmode=disable
+```
+
+PostgreSQL data is stored in a named Docker volume called `launchdarkly_postgres-data`.
 
 ## Test
 

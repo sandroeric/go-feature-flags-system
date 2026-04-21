@@ -1,0 +1,7 @@
+.git
+.gitignore
+bin
+coverage.out
+*.test
+Dockerfile
+docker-compose.yml

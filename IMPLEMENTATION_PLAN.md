@@ -27,6 +27,31 @@ Goal: Create the base Go service and architecture boundaries.
   - [x] `make run`
   - [x] `make bench`
 
+## Phase 1.5: Dockerized Local Development
+
+Goal: Make the service and its dependencies runnable in a consistent local environment.
+
+- [x] Add `Dockerfile` for the Go API service.
+- [x] Add `.dockerignore`.
+- [x] Add `docker-compose.yml`.
+- [x] Add PostgreSQL service.
+- [x] Configure API service environment:
+  - [x] `HTTP_ADDR=:8080`
+  - [x] `DATABASE_URL=postgres://...`
+  - [x] `SYNC_INTERVAL=5s`
+- [x] Expose API port:
+  - [x] `8080:8080`
+- [x] Expose PostgreSQL port:
+  - [x] `5432:5432`
+- [x] Add container health check for `/health`.
+- [x] Add persistent Postgres volume.
+- [x] Add Makefile targets:
+  - [x] `make docker-build`
+  - [x] `make docker-up`
+  - [x] `make docker-down`
+  - [x] `make docker-logs`
+- [x] Document Docker usage in README.
+
 ## Phase 2: Domain Model and Validation
 
 Goal: Implement the source-of-truth models used by the control plane.

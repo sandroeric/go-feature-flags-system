@@ -24,6 +24,7 @@ Phase 1 is the project foundation, and Phase 1.5 adds Dockerized local developme
 - Compiled evaluation engine added with deterministic bucketing.
 - API validation errors are mapped to a structured response shape.
 - Immutable in-memory store and atomic swaps added.
+- PostgreSQL migrations and repository added.
 
 ## Project Layout
 
@@ -66,8 +67,11 @@ Expected response:
 
 ```json
 {
+  "flag_count": "0",
   "service": "launchdarkly",
   "started_at": "2026-04-21T00:00:00Z",
+  "store_generation": "0",
+  "store_version": "0",
   "status": "ok"
 }
 ```
@@ -110,6 +114,23 @@ postgres://launchdarkly:launchdarkly@postgres:5432/launchdarkly?sslmode=disable
 ```
 
 PostgreSQL data is stored in a named Docker volume called `launchdarkly_postgres-data`.
+
+## Database
+
+When `DATABASE_URL` is set, the server opens PostgreSQL and applies embedded migrations at startup. Docker Compose provides the expected local database URL automatically.
+
+The persistence layer stores flags in normalized tables:
+
+- `flags`
+- `variants`
+- `rules`
+
+Run database integration tests against the Compose PostgreSQL instance:
+
+```bash
+make docker-up
+make test-integration
+```
 
 ## Evaluation Example
 

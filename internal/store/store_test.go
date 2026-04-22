@@ -10,7 +10,9 @@ import (
 )
 
 func TestStoreGetFlag(t *testing.T) {
-	compiled := mustCompile(t, flagWithKey("checkout"))
+	source := flagWithKey("checkout")
+	source.Version = 7
+	compiled := mustCompile(t, source)
 	store := New(compiled)
 
 	got, ok := store.GetFlag("checkout")
@@ -19,6 +21,9 @@ func TestStoreGetFlag(t *testing.T) {
 	}
 	if got.Key != "checkout" {
 		t.Fatalf("GetFlag() key = %q, want %q", got.Key, "checkout")
+	}
+	if store.Version() != 7 {
+		t.Fatalf("Version() = %d, want 7", store.Version())
 	}
 }
 
@@ -77,6 +82,9 @@ func TestHolderCurrentAndSwap(t *testing.T) {
 	if holder.Current().Len() != 1 {
 		t.Fatalf("Current().Len() = %d, want 1", holder.Current().Len())
 	}
+	if holder.Current().Generation() != 0 {
+		t.Fatalf("Current().Generation() = %d, want 0", holder.Current().Generation())
+	}
 
 	holder.Swap(New(mustCompile(t, flagWithKey("search"))))
 
@@ -85,6 +93,9 @@ func TestHolderCurrentAndSwap(t *testing.T) {
 	}
 	if _, ok := holder.GetFlag("search"); !ok {
 		t.Fatal("GetFlag(search) ok = false, want true")
+	}
+	if holder.Current().Generation() != 1 {
+		t.Fatalf("Current().Generation() = %d, want 1", holder.Current().Generation())
 	}
 }
 

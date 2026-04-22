@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"launchdarkly/internal/config"
+	flagstore "launchdarkly/internal/store"
 )
 
 func TestHealth(t *testing.T) {
-	server := NewServer(config.Config{}).Routes()
+	server := newTestServer()
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
@@ -31,10 +32,13 @@ func TestHealth(t *testing.T) {
 	if body["service"] != "launchdarkly" {
 		t.Fatalf("service body = %q, want %q", body["service"], "launchdarkly")
 	}
+	if body["store_generation"] != "0" {
+		t.Fatalf("store_generation body = %q, want %q", body["store_generation"], "0")
+	}
 }
 
 func TestHealthRejectsUnsupportedMethod(t *testing.T) {
-	server := NewServer(config.Config{}).Routes()
+	server := newTestServer()
 
 	req := httptest.NewRequest(http.MethodPost, "/health", nil)
 	rec := httptest.NewRecorder()
@@ -55,7 +59,7 @@ func TestHealthRejectsUnsupportedMethod(t *testing.T) {
 }
 
 func TestNotFoundUsesStructuredError(t *testing.T) {
-	server := NewServer(config.Config{}).Routes()
+	server := newTestServer()
 
 	req := httptest.NewRequest(http.MethodGet, "/missing", nil)
 	rec := httptest.NewRecorder()
@@ -73,4 +77,8 @@ func TestNotFoundUsesStructuredError(t *testing.T) {
 	if body.Error.Code != "not_found" {
 		t.Fatalf("error code = %q, want %q", body.Error.Code, "not_found")
 	}
+}
+
+func newTestServer() http.Handler {
+	return NewServer(config.Config{}, flagstore.NewHolder(flagstore.Empty())).Routes()
 }

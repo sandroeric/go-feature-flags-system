@@ -8,7 +8,8 @@ import (
 )
 
 type Holder struct {
-	current atomic.Value // stores *Store
+	current    atomic.Value // stores *Store
+	generation atomic.Uint64
 }
 
 func NewHolder(initial *Store) *Holder {
@@ -17,6 +18,7 @@ func NewHolder(initial *Store) *Holder {
 	}
 
 	holder := &Holder{}
+	holder.generation.Store(initial.Generation())
 	holder.current.Store(initial)
 	return holder
 }
@@ -39,7 +41,8 @@ func (h *Holder) Swap(newStore *Store) {
 		newStore = Empty()
 	}
 
-	h.current.Store(newStore)
+	generation := h.generation.Add(1)
+	h.current.Store(newStore.withGeneration(generation))
 }
 
 func (h *Holder) GetFlag(key string) (*eval.CompiledFlag, bool) {

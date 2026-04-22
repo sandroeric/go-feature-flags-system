@@ -12,6 +12,8 @@ import (
 
 	"launchdarkly/internal/api"
 	"launchdarkly/internal/config"
+	"launchdarkly/internal/db"
+	flagstore "launchdarkly/internal/store"
 )
 
 func main() {
@@ -21,15 +23,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	handler := api.NewServer(cfg).Routes()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if cfg.DatabaseURL != "" {
+		database, err := db.OpenPostgres(ctx, cfg.DatabaseURL)
+		if err != nil {
+			slog.Error("failed to connect to database", "error", err)
+			os.Exit(1)
+		}
+		defer database.Close()
+
+		if err := db.RunMigrations(ctx, database); err != nil {
+			slog.Error("failed to run database migrations", "error", err)
+			os.Exit(1)
+		}
+	}
+
+	flagStore := flagstore.NewHolder(flagstore.Empty())
+	handler := api.NewServer(cfg, flagStore).Routes()
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	go func() {
 		slog.Info("server started", "addr", cfg.HTTPAddr)

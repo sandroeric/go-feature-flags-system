@@ -141,31 +141,32 @@ Goal: Add the lock-free, read-optimized data plane store.
   - [x] atomic load
   - [x] map lookup
   - [x] evaluation
+- [x] Add store generation/version metadata for future sync work.
 
 ## Phase 5: PostgreSQL Persistence
 
 Goal: Implement the normalized control-plane database model.
 
-- [ ] Add database migrations.
-- [ ] Create tables:
-  - [ ] `flags`
-  - [ ] `variants`
-  - [ ] `rules`
-- [ ] Include versioning on flags.
-- [ ] Include timestamps:
-  - [ ] `created_at`
-  - [ ] `updated_at`
-- [ ] Add repository methods:
-  - [ ] create flag
-  - [ ] update flag
-  - [ ] delete flag
-  - [ ] list flags
-  - [ ] get flag by key
-  - [ ] load all flags for data-plane compilation
-- [ ] Increment version on every config change.
-- [ ] Wrap multi-table flag writes in transactions.
-- [ ] Add repository integration tests.
-- [ ] Add seed data for local development.
+- [x] Add database migrations.
+- [x] Create tables:
+  - [x] `flags`
+  - [x] `variants`
+  - [x] `rules`
+- [x] Include versioning on flags.
+- [x] Include timestamps:
+  - [x] `created_at`
+  - [x] `updated_at`
+- [x] Add repository methods:
+  - [x] create flag
+  - [x] update flag
+  - [x] delete flag
+  - [x] list flags
+  - [x] get flag by key
+  - [x] load all flags for data-plane compilation
+- [x] Increment version on every config change.
+- [x] Wrap multi-table flag writes in transactions.
+- [x] Add repository integration tests.
+- [x] Add seed data for local development.
 
 ## Phase 6: Admin Control Plane APIs
 

@@ -264,24 +264,24 @@ Goal: Add faster propagation using Postgres `LISTEN/NOTIFY`, while keeping polli
 
 Goal: Support both local and remote evaluation modes.
 
-- [ ] Create SDK package, for example `pkg/client`.
-- [ ] Implement remote client:
-  - [ ] calls `POST /evaluate`
-- [ ] Implement local client:
-  - [ ] downloads compiled or raw config
-  - [ ] evaluates locally
-- [ ] Add client API:
+- [x] Create SDK package, for example `pkg/client`.
+- [x] Implement remote client:
+  - [x] calls `POST /evaluate`
+- [x] Implement local client:
+  - [x] downloads compiled or raw config
+  - [x] evaluates locally
+- [x] Add client API:
 
 ```go
 variant := client.Eval("checkout", user)
 ```
 
-- [ ] Add config sync for local mode.
-- [ ] Add fallback behavior when sync fails.
-- [ ] Add tests proving local mode does not call remote evaluation during hot path.
-- [ ] Document tradeoff:
-  - [ ] local evaluation is fastest but eventually consistent
-  - [ ] remote evaluation is fresher but has network latency
+- [x] Add config sync for local mode.
+- [x] Add fallback behavior when sync fails.
+- [x] Add tests proving local mode does not call remote evaluation during hot path.
+- [x] Document tradeoff:
+  - [x] local evaluation is fastest but eventually consistent
+  - [x] remote evaluation is fresher but has network latency
 
 ## Phase 11: Performance, Reliability, and Observability
 

@@ -172,32 +172,32 @@ Goal: Implement the normalized control-plane database model.
 
 Goal: Expose CRUD APIs for managing flags.
 
-- [ ] Implement:
-  - [ ] `POST /flags`
-  - [ ] `PUT /flags/:key`
-  - [ ] `GET /flags`
-  - [ ] `GET /flags/:key`
-  - [ ] `DELETE /flags/:key`
-- [ ] Validate request payloads before persistence.
+- [x] Implement:
+  - [x] `POST /flags`
+  - [x] `PUT /flags/:key`
+  - [x] `GET /flags`
+  - [x] `GET /flags/:key`
+  - [x] `DELETE /flags/:key`
+- [x] Validate request payloads before persistence.
 - [x] Add reusable API-level validation response mapping before admin handlers.
-- [ ] Return validation errors clearly.
-- [ ] Increment version on updates.
-- [ ] Trigger data-plane refresh after successful writes.
-- [ ] Add API tests for:
-  - [ ] valid create
-  - [ ] invalid weights
-  - [ ] invalid rule operator
-  - [ ] update version increment
-  - [ ] delete behavior
-- [ ] Document request/response examples in README.
+- [x] Return validation errors clearly.
+- [x] Increment version on updates.
+- [x] Trigger data-plane refresh after successful writes.
+- [x] Add API tests for:
+  - [x] valid create
+  - [x] invalid weights
+  - [x] invalid rule operator
+  - [x] update version increment
+  - [x] delete behavior
+- [x] Document request/response examples in README.
 
 ## Phase 7: Evaluation API
 
 Goal: Add remote evaluation support.
 
-- [ ] Implement:
-  - [ ] `POST /evaluate`
-- [ ] Support request shape:
+- [x] Implement:
+  - [x] `POST /evaluate`
+- [x] Support request shape:
 
 ```json
 {
@@ -209,7 +209,7 @@ Goal: Add remote evaluation support.
 }
 ```
 
-- [ ] Support response shape:
+- [x] Support response shape:
 
 ```json
 {
@@ -217,31 +217,31 @@ Goal: Add remote evaluation support.
 }
 ```
 
-- [ ] Ensure `/evaluate` uses only the in-memory store.
-- [ ] Do not call PostgreSQL from `/evaluate`.
-- [ ] Return default or a clear error for unknown flags.
-- [ ] Add latency-focused tests.
-- [ ] Add benchmark for remote evaluation handler.
-- [ ] Add README section explaining local vs remote evaluation.
+- [x] Ensure `/evaluate` uses only the in-memory store.
+- [x] Do not call PostgreSQL from `/evaluate`.
+- [x] Return default or a clear error for unknown flags.
+- [x] Add latency-focused tests.
+- [x] Add benchmark for remote evaluation handler.
+- [x] Add README section explaining local vs remote evaluation.
 
 ## Phase 8: Sync Between Control Plane and Data Plane
 
 Goal: Keep the in-memory compiled store fresh.
 
-- [ ] Implement full reload from PostgreSQL.
-- [ ] Compile all DB flags into a fresh immutable `Store`.
-- [ ] Atomically swap the new store.
-- [ ] Add polling sync:
-  - [ ] default every `5s`
-- [ ] Track last successful refresh time.
-- [ ] Log sync failures without breaking evaluation.
-- [ ] Keep old store active if reload fails.
-- [ ] Add manual refresh hook after admin writes.
-- [ ] Add tests for:
-  - [ ] successful refresh
-  - [ ] failed refresh preserves old store
-  - [ ] deleted flags disappear after refresh
-  - [ ] updated versions replace old versions
+- [x] Implement full reload from PostgreSQL.
+- [x] Compile all DB flags into a fresh immutable `Store`.
+- [x] Atomically swap the new store.
+- [x] Add polling sync:
+  - [x] default every `5s`
+- [x] Track last successful refresh time.
+- [x] Log sync failures without breaking evaluation.
+- [x] Keep old store active if reload fails.
+- [x] Add manual refresh hook after admin writes.
+- [x] Add tests for:
+  - [x] successful refresh
+  - [x] failed refresh preserves old store
+  - [x] deleted flags disappear after refresh
+  - [x] updated versions replace old versions
 
 ## Phase 9: Real-Time Updates
 

@@ -67,3 +67,9 @@ func writeValidationError(w http.ResponseWriter, err error) bool {
 
 	return true
 }
+
+// parseJSON decodes the request body as JSON into the provided value.
+func parseJSON(r *http.Request, v any) error {
+	defer r.Body.Close()
+	return json.NewDecoder(r.Body).Decode(v)
+}

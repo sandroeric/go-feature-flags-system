@@ -14,6 +14,7 @@ import (
 	"launchdarkly/internal/config"
 	"launchdarkly/internal/db"
 	flagstore "launchdarkly/internal/store"
+	"launchdarkly/internal/sync"
 )
 
 func main() {
@@ -26,6 +27,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	var repo api.FlagRepository
 	if cfg.DatabaseURL != "" {
 		database, err := db.OpenPostgres(ctx, cfg.DatabaseURL)
 		if err != nil {
@@ -38,10 +40,33 @@ func main() {
 			slog.Error("failed to run database migrations", "error", err)
 			os.Exit(1)
 		}
+
+		repo = db.NewRepository(database)
 	}
 
 	flagStore := flagstore.NewHolder(flagstore.Empty())
-	handler := api.NewServer(cfg, flagStore).Routes()
+	apiServer := api.NewServer(cfg, flagStore, repo)
+
+	// Set up syncer if repository is available
+	var pollingDone <-chan struct{}
+	if repo != nil {
+		syncer := sync.NewSyncer(repo, flagStore)
+
+		// Set the refresh function on the API server for manual refreshes after writes
+		apiServer.SetRefreshFunc(func(ctx context.Context) error {
+			return syncer.Sync(ctx)
+		})
+
+		// Start polling sync with interval from config
+		syncInterval := cfg.SyncInterval
+		if syncInterval == 0 {
+			syncInterval = 5 * time.Second
+		}
+		pollingDone = sync.StartPolling(ctx, syncer, syncInterval)
+		slog.Info("sync polling started", "interval", syncInterval)
+	}
+
+	handler := apiServer.Routes()
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           handler,
@@ -64,6 +89,11 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("server shutdown failed", "error", err)
 		os.Exit(1)
+	}
+
+	// Wait for polling to stop
+	if pollingDone != nil {
+		<-pollingDone
 	}
 
 	slog.Info("server stopped")

@@ -166,6 +166,227 @@ variant := eval.Evaluate(compiled, &domain.Context{
 })
 ```
 
+## Admin Control Plane APIs
+
+Phase 6 exposes CRUD APIs for managing flags. The control plane is suitable for admin operations and accepts full flag configurations with validation before persistence.
+
+All endpoints return structured JSON error responses with validation details when applicable.
+
+### Create Flag
+
+```http
+POST /flags
+Content-Type: application/json
+
+{
+  "key": "checkout_flow",
+  "enabled": true,
+  "default": "control",
+  "variants": [
+    {"name": "control", "weight": 50},
+    {"name": "treatment", "weight": 50}
+  ],
+  "rules": [
+    {
+      "attribute": "country",
+      "operator": "eq",
+      "values": ["BR"],
+      "variant": "treatment",
+      "priority": 1
+    }
+  ]
+}
+```
+
+Response `201 Created`:
+
+```json
+{
+  "key": "checkout_flow",
+  "enabled": true,
+  "default": "control",
+  "version": 1,
+  "variants": [
+    {"name": "control", "weight": 50},
+    {"name": "treatment", "weight": 50}
+  ],
+  "rules": [
+    {
+      "attribute": "country",
+      "operator": "eq",
+      "values": ["BR"],
+      "variant": "treatment",
+      "priority": 1
+    }
+  ]
+}
+```
+
+Validation errors return `400 Bad Request` with a `validation_failed` error code and per-field details:
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "request validation failed",
+    "details": [
+      {
+        "field": "variants",
+        "code": "invalid_weights",
+        "message": "weights must sum to 100"
+      }
+    ]
+  }
+}
+```
+
+### Get All Flags
+
+```http
+GET /flags
+```
+
+Response `200 OK`:
+
+```json
+[
+  {
+    "key": "checkout_flow",
+    "enabled": true,
+    "default": "control",
+    "version": 1,
+    "variants": [...],
+    "rules": [...]
+  }
+]
+```
+
+Returns an empty array if no flags exist.
+
+### Get Flag by Key
+
+```http
+GET /flags/{key}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "key": "checkout_flow",
+  "enabled": true,
+  "default": "control",
+  "version": 1,
+  "variants": [...],
+  "rules": [...]
+}
+```
+
+Returns `404 Not Found` if the flag does not exist.
+
+### Update Flag
+
+```http
+PUT /flags/{key}
+Content-Type: application/json
+
+{
+  "enabled": false,
+  "default": "control",
+  "variants": [
+    {"name": "control", "weight": 50},
+    {"name": "treatment", "weight": 50}
+  ],
+  "rules": [...]
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "key": "checkout_flow",
+  "enabled": false,
+  "default": "control",
+  "version": 2,
+  "variants": [...],
+  "rules": [...]
+}
+```
+
+The version is automatically incremented. Returns `404 Not Found` if the flag does not exist.
+
+### Delete Flag
+
+```http
+DELETE /flags/{key}
+```
+
+Response `204 No Content` on success.
+
+Returns `404 Not Found` if the flag does not exist.
+
+### Data-Plane Refresh
+
+After a flag is created, updated, or deleted, the control plane triggers a refresh to propagate the changes to the data-plane in-memory store. Phase 8 implements the automatic polling and Phase 9 adds real-time updates via database triggers.
+
+## Evaluation API
+
+Phase 7 adds remote evaluation support. The `/evaluate` endpoint provides fast, in-memory evaluation that uses only the data plane store (no database calls).
+
+### Remote Evaluation
+
+```http
+POST /evaluate
+Content-Type: application/json
+
+{
+  "flag_key": "checkout_flow",
+  "context": {
+    "user_id": "user123",
+    "country": "BR"
+  }
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "variant": "treatment"
+}
+```
+
+Returns `404 Not Found` if the flag does not exist in the data-plane store.
+
+This endpoint is suitable for low-latency evaluation in production. It uses only the in-memory store and performs deterministic bucketing to ensure consistent results for the same user and flag.
+
+## Data-Plane Sync
+
+Phase 8 implements automatic polling to keep the in-memory store synchronized with the database:
+
+- Polls every `SYNC_INTERVAL` (default `5s`)
+- Compiles all flags from the database into a fresh immutable store
+- Atomically swaps the new store
+- If a refresh fails, the old store remains active (no downtime)
+- Deleted flags are removed after refresh
+- Updated flag versions replace old versions
+- Manual refresh is triggered immediately after control-plane writes
+
+The sync process ensures that:
+
+1. The data plane is always up-to-date with the control plane
+2. Evaluation continues even if a sync fails
+3. Store generation increments after each successful sync
+
+### Configuration
+
+Set `SYNC_INTERVAL` to control polling frequency:
+
+```bash
+SYNC_INTERVAL=10s ./server
+```
+
 ## Test
 
 ```bash

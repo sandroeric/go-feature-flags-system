@@ -361,6 +361,38 @@ Returns `404 Not Found` if the flag does not exist in the data-plane store.
 
 This endpoint is suitable for low-latency evaluation in production. It uses only the in-memory store and performs deterministic bucketing to ensure consistent results for the same user and flag.
 
+## Go SDK
+
+Phase 10 adds a Go client in `pkg/client` with two evaluation modes:
+
+- `remote`: calls `POST /evaluate` for each evaluation
+- `local`: polls `GET /flags`, compiles flags locally, and evaluates from an in-memory store
+
+Example:
+
+```go
+sdk, err := client.New(client.Config{
+	Mode:    client.ModeRemote,
+	BaseURL: "http://localhost:8080",
+})
+if err != nil {
+	// handle error
+}
+
+variant, err := sdk.Eval("checkout_flow", domain.Context{
+	UserID:  "123",
+	Country: "BR",
+})
+if err != nil {
+	// handle error
+}
+```
+
+Tradeoff:
+
+- Local evaluation is fastest on the hot path and avoids network calls, but it is eventually consistent with the server until the next successful sync.
+- Remote evaluation is fresher because it always uses the server's current in-memory data plane, but every evaluation pays network latency.
+
 ## Data-Plane Sync
 
 Phase 8 implements automatic polling to keep the in-memory store synchronized with the database:

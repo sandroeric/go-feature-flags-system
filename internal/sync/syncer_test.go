@@ -3,11 +3,13 @@ package sync
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
 	"launchdarkly/internal/domain"
 	"launchdarkly/internal/eval"
+	"launchdarkly/internal/metrics"
 	"launchdarkly/internal/store"
 )
 
@@ -26,14 +28,19 @@ func (m *mockRepository) LoadAllFlags(ctx context.Context) ([]domain.Flag, error
 
 // mockHolder is a test implementation of Holder
 type mockHolder struct {
+	mu      sync.RWMutex
 	current *store.Store
 }
 
 func (m *mockHolder) Current() *store.Store {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.current
 }
 
 func (m *mockHolder) Swap(s *store.Store) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.current = s
 }
 
@@ -51,6 +58,8 @@ func TestSyncSuccess(t *testing.T) {
 	repo := &mockRepository{flags: []domain.Flag{flag}}
 	holder := &mockHolder{current: store.Empty()}
 	syncer := NewSyncer(repo, holder)
+	collector := metrics.NewCollector()
+	syncer.SetMetrics(collector)
 
 	err := syncer.Sync(context.Background())
 	if err != nil {
@@ -70,6 +79,9 @@ func TestSyncSuccess(t *testing.T) {
 	if retrieved.Key != "test" {
 		t.Fatalf("flag key = %q, want %q", retrieved.Key, "test")
 	}
+	if collector.Snapshot().SyncSuccessCount != 1 {
+		t.Fatalf("sync success count = %d, want 1", collector.Snapshot().SyncSuccessCount)
+	}
 }
 
 func TestSyncFailure(t *testing.T) {
@@ -77,6 +89,8 @@ func TestSyncFailure(t *testing.T) {
 	repo := &mockRepository{err: expectedErr}
 	holder := &mockHolder{current: store.Empty()}
 	syncer := NewSyncer(repo, holder)
+	collector := metrics.NewCollector()
+	syncer.SetMetrics(collector)
 
 	err := syncer.Sync(context.Background())
 	if err == nil {
@@ -91,6 +105,9 @@ func TestSyncFailure(t *testing.T) {
 	// Verify last error is recorded
 	if syncer.LastError() != expectedErr {
 		t.Fatalf("last error = %v, want %v", syncer.LastError(), expectedErr)
+	}
+	if collector.Snapshot().SyncFailureCount != 1 {
+		t.Fatalf("sync failure count = %d, want 1", collector.Snapshot().SyncFailureCount)
 	}
 }
 

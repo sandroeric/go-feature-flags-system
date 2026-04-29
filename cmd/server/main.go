@@ -52,6 +52,7 @@ func main() {
 	var realtimeDone <-chan struct{}
 	if repo != nil {
 		syncer := sync.NewSyncer(repo, flagStore)
+		syncer.SetMetrics(apiServer.Metrics())
 
 		// Set the refresh function on the API server for manual refreshes after writes
 		apiServer.SetRefreshFunc(func(ctx context.Context) error {

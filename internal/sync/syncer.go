@@ -9,6 +9,7 @@ import (
 
 	"launchdarkly/internal/domain"
 	"launchdarkly/internal/eval"
+	"launchdarkly/internal/metrics"
 	"launchdarkly/internal/store"
 )
 
@@ -27,9 +28,16 @@ type Holder interface {
 type Syncer struct {
 	repo      Repository
 	holder    Holder
+	metrics   *metrics.Collector
 	mu        sync.RWMutex
 	lastSync  time.Time
 	lastError error
+}
+
+func (s *Syncer) SetMetrics(collector *metrics.Collector) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.metrics = collector
 }
 
 // NewSyncer creates a new syncer.
@@ -46,11 +54,14 @@ func NewSyncer(repo Repository, holder Holder) *Syncer {
 func (s *Syncer) Sync(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	start := time.Now()
 
 	// Load all flags from database
 	flags, err := s.repo.LoadAllFlags(ctx)
 	if err != nil {
 		s.lastError = err
+		current := s.holder.Current()
+		s.metrics.ObserveSync(false, time.Since(start), current.Generation(), current.Version())
 		slog.Error("failed to load flags from database", "error", err)
 		return fmt.Errorf("load flags: %w", err)
 	}
@@ -76,6 +87,8 @@ func (s *Syncer) Sync(ctx context.Context) error {
 	s.holder.Swap(newStore)
 	s.lastSync = time.Now().UTC()
 	s.lastError = nil
+	active := s.holder.Current()
+	s.metrics.ObserveSync(true, time.Since(start), active.Generation(), active.Version())
 
 	slog.Info("synced flags from database", "count", len(compiled), "generation", nextGeneration)
 	return nil

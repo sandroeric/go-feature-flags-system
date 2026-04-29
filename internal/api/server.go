@@ -10,6 +10,7 @@ import (
 	"launchdarkly/internal/config"
 	"launchdarkly/internal/db"
 	"launchdarkly/internal/domain"
+	"launchdarkly/internal/metrics"
 	flagstore "launchdarkly/internal/store"
 )
 
@@ -40,6 +41,7 @@ type Server struct {
 	repo      FlagRepository
 	startedAt time.Time
 	refreshFn func(context.Context) error // Called after writes to refresh data plane
+	metrics   *metrics.Collector
 }
 
 func NewServer(cfg config.Config, flags *flagstore.Holder, repo FlagRepository) *Server {
@@ -52,6 +54,7 @@ func NewServer(cfg config.Config, flags *flagstore.Holder, repo FlagRepository) 
 		flags:     flags,
 		repo:      repo,
 		startedAt: time.Now().UTC(),
+		metrics:   metrics.NewCollector(),
 	}
 
 	// Default refresh function (no-op for now, Phase 8 will implement)
@@ -72,6 +75,9 @@ func (s *Server) SetRefreshFunc(fn func(context.Context) error) {
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.handleHealth)
+	mux.HandleFunc("GET /app", s.handleAdminIndex)
+	mux.Handle("GET /app/", http.StripPrefix("/app/", adminUIHandler()))
+	mux.HandleFunc("GET /metrics", s.handleMetrics)
 	mux.HandleFunc("GET /flags", s.handleGetFlags)
 	mux.HandleFunc("POST /flags", s.handleCreateFlag)
 	mux.HandleFunc("GET /flags/{key}", s.handleGetFlag)
@@ -80,6 +86,10 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /evaluate", s.handleEvaluate)
 	mux.HandleFunc("/", s.handleNotFound)
 	return mux
+}
+
+func (s *Server) Metrics() *metrics.Collector {
+	return s.metrics
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +111,15 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	writeError(w, http.StatusNotFound, "not_found", "route not found")
+}
+
+func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, s.metrics.Snapshot())
 }
 
 // handleCreateFlag handles POST /flags
@@ -263,6 +282,7 @@ func (s *Server) handleEvaluate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed")
 		return
 	}
+	start := time.Now()
 
 	var req EvaluateRequest
 	if err := parseJSON(r, &req); err != nil {
@@ -278,6 +298,7 @@ func (s *Server) handleEvaluate(w http.ResponseWriter, r *http.Request) {
 	// Evaluate using only the in-memory store (data plane)
 	current := s.flags.Current()
 	variant, found := current.Evaluate(req.FlagKey, &req.Context)
+	s.metrics.ObserveEvaluation(time.Since(start), found, current.Generation(), current.Version())
 	if !found {
 		writeError(w, http.StatusNotFound, "flag_not_found", "flag not found")
 		return

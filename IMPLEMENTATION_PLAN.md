@@ -247,18 +247,18 @@ Goal: Keep the in-memory compiled store fresh.
 
 Goal: Add faster propagation using Postgres `LISTEN/NOTIFY`, while keeping polling as fallback.
 
-- [ ] Add database trigger or application-level `NOTIFY flags_updated`.
-- [ ] Implement Postgres listener.
-- [ ] On notification, reload and swap store.
-- [ ] Add reconnect handling.
-- [ ] Keep polling fallback enabled.
-- [ ] Avoid duplicate refresh storms with basic debounce.
-- [ ] Add integration test or manual verification flow:
-  - [ ] update flag
-  - [ ] notification fires
-  - [ ] store refreshes
-  - [ ] evaluation changes without restart
-- [ ] Document eventual consistency tradeoff.
+- [x] Add database trigger or application-level `NOTIFY flags_updated`.
+- [x] Implement Postgres listener.
+- [x] On notification, reload and swap store.
+- [x] Add reconnect handling.
+- [x] Keep polling fallback enabled.
+- [x] Avoid duplicate refresh storms with basic debounce.
+- [x] Add integration test or manual verification flow:
+  - [x] update flag
+  - [x] notification fires
+  - [x] store refreshes
+  - [x] evaluation changes without restart
+- [x] Document eventual consistency tradeoff.
 
 ## Phase 10: Go SDK / Client Layer
 

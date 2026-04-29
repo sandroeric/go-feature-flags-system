@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"launchdarkly/internal/domain"
@@ -26,6 +27,7 @@ type Holder interface {
 type Syncer struct {
 	repo      Repository
 	holder    Holder
+	mu        sync.RWMutex
 	lastSync  time.Time
 	lastError error
 }
@@ -42,6 +44,9 @@ func NewSyncer(repo Repository, holder Holder) *Syncer {
 // It compiles all flags into a fresh immutable Store and atomically swaps it.
 // If the refresh fails, the old store is kept active and the error is logged.
 func (s *Syncer) Sync(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// Load all flags from database
 	flags, err := s.repo.LoadAllFlags(ctx)
 	if err != nil {
@@ -78,11 +83,17 @@ func (s *Syncer) Sync(ctx context.Context) error {
 
 // LastSync returns the time of the last successful sync.
 func (s *Syncer) LastSync() time.Time {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.lastSync
 }
 
 // LastError returns the error from the last sync attempt.
 func (s *Syncer) LastError() error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.lastError
 }
 

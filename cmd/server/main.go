@@ -49,6 +49,7 @@ func main() {
 
 	// Set up syncer if repository is available
 	var pollingDone <-chan struct{}
+	var realtimeDone <-chan struct{}
 	if repo != nil {
 		syncer := sync.NewSyncer(repo, flagStore)
 
@@ -64,6 +65,9 @@ func main() {
 		}
 		pollingDone = sync.StartPolling(ctx, syncer, syncInterval)
 		slog.Info("sync polling started", "interval", syncInterval)
+
+		realtimeDone = sync.StartRealtimeListener(ctx, cfg.DatabaseURL, syncer)
+		slog.Info("realtime sync listener started", "channel", "flags_updated")
 	}
 
 	handler := apiServer.Routes()
@@ -94,6 +98,9 @@ func main() {
 	// Wait for polling to stop
 	if pollingDone != nil {
 		<-pollingDone
+	}
+	if realtimeDone != nil {
+		<-realtimeDone
 	}
 
 	slog.Info("server stopped")

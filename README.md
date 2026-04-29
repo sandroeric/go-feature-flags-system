@@ -49,7 +49,7 @@ The server reads configuration from environment variables:
 | `HTTP_ADDR` | `:8080` | Address used by the HTTP server. |
 | `PORT` | empty | Used as `:<PORT>` when `HTTP_ADDR` is not set. |
 | `DATABASE_URL` | empty | PostgreSQL connection string for later phases. |
-| `SYNC_INTERVAL` | `5s` | Data-plane refresh interval for later phases. |
+| `SYNC_INTERVAL` | `5s` | Polling fallback interval for data-plane refreshes. |
 
 ## Run
 
@@ -366,12 +366,14 @@ This endpoint is suitable for low-latency evaluation in production. It uses only
 Phase 8 implements automatic polling to keep the in-memory store synchronized with the database:
 
 - Polls every `SYNC_INTERVAL` (default `5s`)
+- Uses PostgreSQL `LISTEN/NOTIFY` for near-real-time refresh signals
 - Compiles all flags from the database into a fresh immutable store
 - Atomically swaps the new store
 - If a refresh fails, the old store remains active (no downtime)
 - Deleted flags are removed after refresh
 - Updated flag versions replace old versions
 - Manual refresh is triggered immediately after control-plane writes
+- Polling remains enabled as a fallback if notifications are missed during reconnects
 
 The sync process ensures that:
 
@@ -386,6 +388,22 @@ Set `SYNC_INTERVAL` to control polling frequency:
 ```bash
 SYNC_INTERVAL=10s ./server
 ```
+
+### Real-Time Verification
+
+To manually verify the realtime update path end-to-end:
+
+1. Start the stack with `make docker-up`.
+2. Create a flag with `POST /flags`.
+3. Call `POST /evaluate` and note the returned variant.
+4. Update the same flag with `PUT /flags/{key}` so the expected variant changes.
+5. Call `POST /evaluate` again without restarting the server.
+
+Expected result: the second evaluation reflects the new configuration immediately, and the server logs show a realtime listener connection followed by a sync.
+
+### Consistency Tradeoff
+
+Evaluation stays available during refreshes because the service swaps in a brand-new immutable store only after a full reload succeeds. The tradeoff is brief eventual consistency: between a control-plane write and the next successful refresh, readers may still observe the previous configuration for a short window.
 
 ## Test
 

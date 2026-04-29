@@ -56,146 +56,148 @@ Goal: Make the service and its dependencies runnable in a consistent local envir
 
 Goal: Implement the source-of-truth models used by the control plane.
 
-- [ ] Define control-plane models:
-  - [ ] `Flag`
-  - [ ] `Variant`
-  - [ ] `Rule`
-  - [ ] `Context`
-- [ ] Include required fields:
-  - [ ] flag key
-  - [ ] enabled state
-  - [ ] default variant
-  - [ ] variants
-  - [ ] rollout weights
-  - [ ] rules
-  - [ ] version
-- [ ] Add validation rules:
-  - [ ] flag key is required
-  - [ ] default variant exists
-  - [ ] variant names are unique
-  - [ ] weights are non-negative
-  - [ ] weights sum to expected total, likely `100`
-  - [ ] rule operators are supported
-  - [ ] rule variants exist
-  - [ ] rule priorities are valid
-- [ ] Add unit tests for valid and invalid configs.
-- [ ] Keep validation out of the hot evaluation path.
+- [x] Define control-plane models:
+  - [x] `Flag`
+  - [x] `Variant`
+  - [x] `Rule`
+  - [x] `Context`
+- [x] Include required fields:
+  - [x] flag key
+  - [x] enabled state
+  - [x] default variant
+  - [x] variants
+  - [x] rollout weights
+  - [x] rules
+  - [x] version
+- [x] Add validation rules:
+  - [x] flag key is required
+  - [x] default variant exists
+  - [x] variant names are unique
+  - [x] weights are non-negative
+  - [x] weights sum to expected total, likely `100`
+  - [x] rule operators are supported
+  - [x] rule variants exist
+  - [x] rule priorities are valid
+- [x] Add unit tests for valid and invalid configs.
+- [x] Keep validation out of the hot evaluation path.
 
 ## Phase 3: Compiled Evaluation Engine
 
 Goal: Build the fast data-plane evaluator described in the document.
 
-- [ ] Define runtime models separate from DB/control models:
-  - [ ] `CompiledFlag`
-  - [ ] `CompiledRule`
-  - [ ] `WeightedVariant`
-- [ ] Implement compiler:
-  - [ ] `Flag -> CompiledFlag`
-- [ ] Compile rules into executable match logic.
-- [ ] Support initial operators:
-  - [ ] `eq`
-  - [ ] `in`
-- [ ] Sort rules by priority during compilation.
-- [ ] Precompute total rollout weight.
-- [ ] Implement deterministic bucketing:
-  - [ ] hash `user_id`
-  - [ ] hash `flag_key`
-  - [ ] avoid string concatenation where practical
-- [ ] Implement weighted variant selection.
-- [ ] Implement evaluator:
-  - [ ] disabled flag returns default
-  - [ ] matching rule returns rule variant
-  - [ ] missing user ID returns default
-  - [ ] rollout fallback uses stable hash
-- [ ] Add unit tests for:
-  - [ ] disabled flags
-  - [ ] default behavior
-  - [ ] rule matching
-  - [ ] rule priority
-  - [ ] deterministic bucketing
-  - [ ] weighted rollout
-  - [ ] missing user ID
-- [ ] Add benchmark tests with `go test -bench=. -benchmem`.
-- [ ] Target near-zero allocations in evaluator benchmarks.
+- [x] Define runtime models separate from DB/control models:
+  - [x] `CompiledFlag`
+  - [x] `CompiledRule`
+  - [x] `WeightedVariant`
+- [x] Implement compiler:
+  - [x] `Flag -> CompiledFlag`
+- [x] Compile rules into executable match logic.
+- [x] Support initial operators:
+  - [x] `eq`
+  - [x] `in`
+- [x] Sort rules by priority during compilation.
+- [x] Precompute total rollout weight.
+- [x] Implement deterministic bucketing:
+  - [x] hash `user_id`
+  - [x] hash `flag_key`
+  - [x] avoid string concatenation where practical
+- [x] Implement weighted variant selection.
+- [x] Implement evaluator:
+  - [x] disabled flag returns default
+  - [x] matching rule returns rule variant
+  - [x] missing user ID returns default
+  - [x] rollout fallback uses stable hash
+- [x] Add unit tests for:
+  - [x] disabled flags
+  - [x] default behavior
+  - [x] rule matching
+  - [x] rule priority
+  - [x] deterministic bucketing
+  - [x] weighted rollout
+  - [x] missing user ID
+- [x] Add benchmark tests with `go test -bench=. -benchmem`.
+- [x] Target near-zero allocations in evaluator benchmarks.
 
 ## Phase 4: Immutable In-Memory Store
 
 Goal: Add the lock-free, read-optimized data plane store.
 
-- [ ] Define immutable `Store`:
-  - [ ] `map[string]*CompiledFlag`
-- [ ] Add atomic holder:
-  - [ ] `atomic.Value` storing `*Store`
-- [ ] Implement store load:
-  - [ ] `Current() *Store`
-- [ ] Implement atomic replacement:
-  - [ ] `Swap(newStore *Store)`
-- [ ] Ensure live stores are never mutated after publication.
-- [ ] Add lookup method:
-  - [ ] `GetFlag(key string) (*CompiledFlag, bool)`
-- [ ] Add service method:
-  - [ ] `Evaluate(flagKey string, ctx Context) variant`
-- [ ] Add concurrency tests with `go test -race`.
-- [ ] Test that reads continue while swaps happen.
-- [ ] Add benchmark for:
-  - [ ] atomic load
-  - [ ] map lookup
-  - [ ] evaluation
+- [x] Define immutable `Store`:
+  - [x] `map[string]*CompiledFlag`
+- [x] Add atomic holder:
+  - [x] `atomic.Value` storing `*Store`
+- [x] Implement store load:
+  - [x] `Current() *Store`
+- [x] Implement atomic replacement:
+  - [x] `Swap(newStore *Store)`
+- [x] Ensure live stores are never mutated after publication.
+- [x] Add lookup method:
+  - [x] `GetFlag(key string) (*CompiledFlag, bool)`
+- [x] Add service method:
+  - [x] `Evaluate(flagKey string, ctx Context) variant`
+- [x] Add concurrency tests with `go test -race`.
+- [x] Test that reads continue while swaps happen.
+- [x] Add benchmark for:
+  - [x] atomic load
+  - [x] map lookup
+  - [x] evaluation
+- [x] Add store generation/version metadata for future sync work.
 
 ## Phase 5: PostgreSQL Persistence
 
 Goal: Implement the normalized control-plane database model.
 
-- [ ] Add database migrations.
-- [ ] Create tables:
-  - [ ] `flags`
-  - [ ] `variants`
-  - [ ] `rules`
-- [ ] Include versioning on flags.
-- [ ] Include timestamps:
-  - [ ] `created_at`
-  - [ ] `updated_at`
-- [ ] Add repository methods:
-  - [ ] create flag
-  - [ ] update flag
-  - [ ] delete flag
-  - [ ] list flags
-  - [ ] get flag by key
-  - [ ] load all flags for data-plane compilation
-- [ ] Increment version on every config change.
-- [ ] Wrap multi-table flag writes in transactions.
-- [ ] Add repository integration tests.
-- [ ] Add seed data for local development.
+- [x] Add database migrations.
+- [x] Create tables:
+  - [x] `flags`
+  - [x] `variants`
+  - [x] `rules`
+- [x] Include versioning on flags.
+- [x] Include timestamps:
+  - [x] `created_at`
+  - [x] `updated_at`
+- [x] Add repository methods:
+  - [x] create flag
+  - [x] update flag
+  - [x] delete flag
+  - [x] list flags
+  - [x] get flag by key
+  - [x] load all flags for data-plane compilation
+- [x] Increment version on every config change.
+- [x] Wrap multi-table flag writes in transactions.
+- [x] Add repository integration tests.
+- [x] Add seed data for local development.
 
 ## Phase 6: Admin Control Plane APIs
 
 Goal: Expose CRUD APIs for managing flags.
 
-- [ ] Implement:
-  - [ ] `POST /flags`
-  - [ ] `PUT /flags/:key`
-  - [ ] `GET /flags`
-  - [ ] `GET /flags/:key`
-  - [ ] `DELETE /flags/:key`
-- [ ] Validate request payloads before persistence.
-- [ ] Return validation errors clearly.
-- [ ] Increment version on updates.
-- [ ] Trigger data-plane refresh after successful writes.
-- [ ] Add API tests for:
-  - [ ] valid create
-  - [ ] invalid weights
-  - [ ] invalid rule operator
-  - [ ] update version increment
-  - [ ] delete behavior
-- [ ] Document request/response examples in README.
+- [x] Implement:
+  - [x] `POST /flags`
+  - [x] `PUT /flags/:key`
+  - [x] `GET /flags`
+  - [x] `GET /flags/:key`
+  - [x] `DELETE /flags/:key`
+- [x] Validate request payloads before persistence.
+- [x] Add reusable API-level validation response mapping before admin handlers.
+- [x] Return validation errors clearly.
+- [x] Increment version on updates.
+- [x] Trigger data-plane refresh after successful writes.
+- [x] Add API tests for:
+  - [x] valid create
+  - [x] invalid weights
+  - [x] invalid rule operator
+  - [x] update version increment
+  - [x] delete behavior
+- [x] Document request/response examples in README.
 
 ## Phase 7: Evaluation API
 
 Goal: Add remote evaluation support.
 
-- [ ] Implement:
-  - [ ] `POST /evaluate`
-- [ ] Support request shape:
+- [x] Implement:
+  - [x] `POST /evaluate`
+- [x] Support request shape:
 
 ```json
 {
@@ -207,7 +209,7 @@ Goal: Add remote evaluation support.
 }
 ```
 
-- [ ] Support response shape:
+- [x] Support response shape:
 
 ```json
 {
@@ -215,31 +217,31 @@ Goal: Add remote evaluation support.
 }
 ```
 
-- [ ] Ensure `/evaluate` uses only the in-memory store.
-- [ ] Do not call PostgreSQL from `/evaluate`.
-- [ ] Return default or a clear error for unknown flags.
-- [ ] Add latency-focused tests.
-- [ ] Add benchmark for remote evaluation handler.
-- [ ] Add README section explaining local vs remote evaluation.
+- [x] Ensure `/evaluate` uses only the in-memory store.
+- [x] Do not call PostgreSQL from `/evaluate`.
+- [x] Return default or a clear error for unknown flags.
+- [x] Add latency-focused tests.
+- [x] Add benchmark for remote evaluation handler.
+- [x] Add README section explaining local vs remote evaluation.
 
 ## Phase 8: Sync Between Control Plane and Data Plane
 
 Goal: Keep the in-memory compiled store fresh.
 
-- [ ] Implement full reload from PostgreSQL.
-- [ ] Compile all DB flags into a fresh immutable `Store`.
-- [ ] Atomically swap the new store.
-- [ ] Add polling sync:
-  - [ ] default every `5s`
-- [ ] Track last successful refresh time.
-- [ ] Log sync failures without breaking evaluation.
-- [ ] Keep old store active if reload fails.
-- [ ] Add manual refresh hook after admin writes.
-- [ ] Add tests for:
-  - [ ] successful refresh
-  - [ ] failed refresh preserves old store
-  - [ ] deleted flags disappear after refresh
-  - [ ] updated versions replace old versions
+- [x] Implement full reload from PostgreSQL.
+- [x] Compile all DB flags into a fresh immutable `Store`.
+- [x] Atomically swap the new store.
+- [x] Add polling sync:
+  - [x] default every `5s`
+- [x] Track last successful refresh time.
+- [x] Log sync failures without breaking evaluation.
+- [x] Keep old store active if reload fails.
+- [x] Add manual refresh hook after admin writes.
+- [x] Add tests for:
+  - [x] successful refresh
+  - [x] failed refresh preserves old store
+  - [x] deleted flags disappear after refresh
+  - [x] updated versions replace old versions
 
 ## Phase 9: Real-Time Updates
 

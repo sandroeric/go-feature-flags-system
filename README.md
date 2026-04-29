@@ -20,6 +20,11 @@ Phase 1 is the project foundation, and Phase 1.5 adds Dockerized local developme
 - Make targets added for running, testing, formatting, and benchmarking.
 - Dockerfile added for the API service.
 - Docker Compose added for the API and PostgreSQL.
+- Control-plane domain models and validation added.
+- Compiled evaluation engine added with deterministic bucketing.
+- API validation errors are mapped to a structured response shape.
+- Immutable in-memory store and atomic swaps added.
+- PostgreSQL migrations and repository added.
 
 ## Project Layout
 
@@ -62,8 +67,11 @@ Expected response:
 
 ```json
 {
+  "flag_count": "0",
   "service": "launchdarkly",
   "started_at": "2026-04-21T00:00:00Z",
+  "store_generation": "0",
+  "store_version": "0",
   "status": "ok"
 }
 ```
@@ -107,6 +115,278 @@ postgres://launchdarkly:launchdarkly@postgres:5432/launchdarkly?sslmode=disable
 
 PostgreSQL data is stored in a named Docker volume called `launchdarkly_postgres-data`.
 
+## Database
+
+When `DATABASE_URL` is set, the server opens PostgreSQL and applies embedded migrations at startup. Docker Compose provides the expected local database URL automatically.
+
+The persistence layer stores flags in normalized tables:
+
+- `flags`
+- `variants`
+- `rules`
+
+Run database integration tests against the Compose PostgreSQL instance:
+
+```bash
+make docker-up
+make test-integration
+```
+
+## Evaluation Example
+
+```go
+flag := domain.Flag{
+	Key:     "checkout",
+	Enabled: true,
+	Default: "off",
+	Variants: []domain.Variant{
+		{Name: "off", Weight: 50},
+		{Name: "on", Weight: 50},
+	},
+	Rules: []domain.Rule{
+		{
+			Attribute: "country",
+			Operator:  domain.OperatorEq,
+			Values:    []string{"BR"},
+			Variant:   "on",
+			Priority:  1,
+		},
+	},
+	Version: 1,
+}
+
+compiled, err := eval.CompileFlag(flag)
+if err != nil {
+	// handle validation/compile error
+}
+
+variant := eval.Evaluate(compiled, &domain.Context{
+	UserID:  "123",
+	Country: "BR",
+})
+```
+
+## Admin Control Plane APIs
+
+Phase 6 exposes CRUD APIs for managing flags. The control plane is suitable for admin operations and accepts full flag configurations with validation before persistence.
+
+All endpoints return structured JSON error responses with validation details when applicable.
+
+### Create Flag
+
+```http
+POST /flags
+Content-Type: application/json
+
+{
+  "key": "checkout_flow",
+  "enabled": true,
+  "default": "control",
+  "variants": [
+    {"name": "control", "weight": 50},
+    {"name": "treatment", "weight": 50}
+  ],
+  "rules": [
+    {
+      "attribute": "country",
+      "operator": "eq",
+      "values": ["BR"],
+      "variant": "treatment",
+      "priority": 1
+    }
+  ]
+}
+```
+
+Response `201 Created`:
+
+```json
+{
+  "key": "checkout_flow",
+  "enabled": true,
+  "default": "control",
+  "version": 1,
+  "variants": [
+    {"name": "control", "weight": 50},
+    {"name": "treatment", "weight": 50}
+  ],
+  "rules": [
+    {
+      "attribute": "country",
+      "operator": "eq",
+      "values": ["BR"],
+      "variant": "treatment",
+      "priority": 1
+    }
+  ]
+}
+```
+
+Validation errors return `400 Bad Request` with a `validation_failed` error code and per-field details:
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "request validation failed",
+    "details": [
+      {
+        "field": "variants",
+        "code": "invalid_weights",
+        "message": "weights must sum to 100"
+      }
+    ]
+  }
+}
+```
+
+### Get All Flags
+
+```http
+GET /flags
+```
+
+Response `200 OK`:
+
+```json
+[
+  {
+    "key": "checkout_flow",
+    "enabled": true,
+    "default": "control",
+    "version": 1,
+    "variants": [...],
+    "rules": [...]
+  }
+]
+```
+
+Returns an empty array if no flags exist.
+
+### Get Flag by Key
+
+```http
+GET /flags/{key}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "key": "checkout_flow",
+  "enabled": true,
+  "default": "control",
+  "version": 1,
+  "variants": [...],
+  "rules": [...]
+}
+```
+
+Returns `404 Not Found` if the flag does not exist.
+
+### Update Flag
+
+```http
+PUT /flags/{key}
+Content-Type: application/json
+
+{
+  "enabled": false,
+  "default": "control",
+  "variants": [
+    {"name": "control", "weight": 50},
+    {"name": "treatment", "weight": 50}
+  ],
+  "rules": [...]
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "key": "checkout_flow",
+  "enabled": false,
+  "default": "control",
+  "version": 2,
+  "variants": [...],
+  "rules": [...]
+}
+```
+
+The version is automatically incremented. Returns `404 Not Found` if the flag does not exist.
+
+### Delete Flag
+
+```http
+DELETE /flags/{key}
+```
+
+Response `204 No Content` on success.
+
+Returns `404 Not Found` if the flag does not exist.
+
+### Data-Plane Refresh
+
+After a flag is created, updated, or deleted, the control plane triggers a refresh to propagate the changes to the data-plane in-memory store. Phase 8 implements the automatic polling and Phase 9 adds real-time updates via database triggers.
+
+## Evaluation API
+
+Phase 7 adds remote evaluation support. The `/evaluate` endpoint provides fast, in-memory evaluation that uses only the data plane store (no database calls).
+
+### Remote Evaluation
+
+```http
+POST /evaluate
+Content-Type: application/json
+
+{
+  "flag_key": "checkout_flow",
+  "context": {
+    "user_id": "user123",
+    "country": "BR"
+  }
+}
+```
+
+Response `200 OK`:
+
+```json
+{
+  "variant": "treatment"
+}
+```
+
+Returns `404 Not Found` if the flag does not exist in the data-plane store.
+
+This endpoint is suitable for low-latency evaluation in production. It uses only the in-memory store and performs deterministic bucketing to ensure consistent results for the same user and flag.
+
+## Data-Plane Sync
+
+Phase 8 implements automatic polling to keep the in-memory store synchronized with the database:
+
+- Polls every `SYNC_INTERVAL` (default `5s`)
+- Compiles all flags from the database into a fresh immutable store
+- Atomically swaps the new store
+- If a refresh fails, the old store remains active (no downtime)
+- Deleted flags are removed after refresh
+- Updated flag versions replace old versions
+- Manual refresh is triggered immediately after control-plane writes
+
+The sync process ensures that:
+
+1. The data plane is always up-to-date with the control plane
+2. Evaluation continues even if a sync fails
+3. Store generation increments after each successful sync
+
+### Configuration
+
+Set `SYNC_INTERVAL` to control polling frequency:
+
+```bash
+SYNC_INTERVAL=10s ./server
+```
+
 ## Test
 
 ```bash
@@ -119,4 +399,4 @@ make test
 make bench
 ```
 
-Benchmarks become more meaningful once the evaluation engine exists in Phase 3.
+Current evaluator benchmarks target zero allocations in the hot path.

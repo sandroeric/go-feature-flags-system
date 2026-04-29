@@ -1,7 +1,12 @@
-.PHONY: test run bench fmt docker-build docker-up docker-down docker-logs
+POSTGRES_DSN ?= postgres://launchdarkly:launchdarkly@localhost:5432/launchdarkly?sslmode=disable
+
+.PHONY: test test-integration run bench fmt docker-build docker-up docker-down docker-logs
 
 test:
 	go test ./...
+
+test-integration:
+	DATABASE_URL="$(POSTGRES_DSN)" go test -tags=integration ./internal/db
 
 run:
 	go run ./cmd/server

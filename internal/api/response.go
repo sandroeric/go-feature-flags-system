@@ -2,7 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"launchdarkly/internal/domain"
 )
 
 type ErrorResponse struct {
@@ -10,6 +13,13 @@ type ErrorResponse struct {
 }
 
 type APIError struct {
+	Code    string          `json:"code"`
+	Message string          `json:"message"`
+	Details []APIFieldError `json:"details,omitempty"`
+}
+
+type APIFieldError struct {
+	Field   string `json:"field"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
@@ -30,4 +40,36 @@ func writeError(w http.ResponseWriter, status int, code string, message string) 
 			Message: message,
 		},
 	})
+}
+
+func writeValidationError(w http.ResponseWriter, err error) bool {
+	var validationErrors domain.ValidationErrors
+	if !errors.As(err, &validationErrors) {
+		return false
+	}
+
+	details := make([]APIFieldError, 0, len(validationErrors))
+	for _, validationError := range validationErrors {
+		details = append(details, APIFieldError{
+			Field:   validationError.Field,
+			Code:    validationError.Code,
+			Message: validationError.Message,
+		})
+	}
+
+	writeJSON(w, http.StatusBadRequest, ErrorResponse{
+		Error: APIError{
+			Code:    "validation_failed",
+			Message: "request validation failed",
+			Details: details,
+		},
+	})
+
+	return true
+}
+
+// parseJSON decodes the request body as JSON into the provided value.
+func parseJSON(r *http.Request, v any) error {
+	defer r.Body.Close()
+	return json.NewDecoder(r.Body).Decode(v)
 }

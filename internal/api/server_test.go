@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"launchdarkly/internal/config"
@@ -129,6 +130,81 @@ func TestHealthRejectsUnsupportedMethod(t *testing.T) {
 	}
 }
 
+func TestMetrics(t *testing.T) {
+	repo := newMockRepository()
+	flag := domain.Flag{
+		Key:     "checkout",
+		Enabled: true,
+		Default: "control",
+		Variants: []domain.Variant{
+			{Name: "control", Weight: 50},
+			{Name: "variant", Weight: 50},
+		},
+	}
+	created, err := repo.CreateFlag(context.Background(), flag)
+	if err != nil {
+		t.Fatalf("CreateFlag() error = %v", err)
+	}
+	compiled, err := eval.CompileFlag(created)
+	if err != nil {
+		t.Fatalf("CompileFlag() error = %v", err)
+	}
+
+	holder := flagstore.NewHolder(flagstore.New(compiled))
+	serverImpl := NewServer(config.Config{}, holder, repo)
+	server := serverImpl.Routes()
+
+	for _, req := range []EvaluateRequest{
+		{FlagKey: "checkout", Context: domain.Context{UserID: "123"}},
+		{FlagKey: "missing", Context: domain.Context{UserID: "123"}},
+	} {
+		body := encodeJSON(req)
+		httpReq := httptest.NewRequest(http.MethodPost, "/evaluate", body)
+		rec := httptest.NewRecorder()
+		server.ServeHTTP(rec, httpReq)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	rec := httptest.NewRecorder()
+	server.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var snapshot struct {
+		EvaluationCount  uint64 `json:"evaluation_count"`
+		UnknownFlagCount uint64 `json:"unknown_flag_count"`
+		StoreGeneration  uint64 `json:"store_generation"`
+		StoreVersion     int64  `json:"store_version"`
+		EvaluateLatency  struct {
+			Count uint64 `json:"count"`
+			P95   string `json:"p95"`
+		} `json:"evaluate_latency"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&snapshot); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if snapshot.EvaluationCount != 2 {
+		t.Fatalf("evaluation count = %d, want 2", snapshot.EvaluationCount)
+	}
+	if snapshot.UnknownFlagCount != 1 {
+		t.Fatalf("unknown flag count = %d, want 1", snapshot.UnknownFlagCount)
+	}
+	if snapshot.StoreGeneration != holder.Current().Generation() {
+		t.Fatalf("store generation = %d, want %d", snapshot.StoreGeneration, holder.Current().Generation())
+	}
+	if snapshot.StoreVersion != int64(holder.Current().Version()) {
+		t.Fatalf("store version = %d, want %d", snapshot.StoreVersion, holder.Current().Version())
+	}
+	if snapshot.EvaluateLatency.Count != 2 {
+		t.Fatalf("latency count = %d, want 2", snapshot.EvaluateLatency.Count)
+	}
+	if snapshot.EvaluateLatency.P95 == "0s" {
+		t.Fatal("expected non-zero p95 latency")
+	}
+}
+
 func TestNotFoundUsesStructuredError(t *testing.T) {
 	server := newTestServer()
 
@@ -147,6 +223,44 @@ func TestNotFoundUsesStructuredError(t *testing.T) {
 	}
 	if body.Error.Code != "not_found" {
 		t.Fatalf("error code = %q, want %q", body.Error.Code, "not_found")
+	}
+}
+
+func TestAdminUIIndex(t *testing.T) {
+	server := newTestServer()
+
+	req := httptest.NewRequest(http.MethodGet, "/app", nil)
+	rec := httptest.NewRecorder()
+
+	server.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Type"); !strings.Contains(got, "text/html") {
+		t.Fatalf("content-type = %q, want html", got)
+	}
+	if !strings.Contains(rec.Body.String(), "Flag Workshop") {
+		t.Fatal("expected admin UI HTML")
+	}
+}
+
+func TestAdminUIAsset(t *testing.T) {
+	server := newTestServer()
+
+	req := httptest.NewRequest(http.MethodGet, "/app/app.js", nil)
+	rec := httptest.NewRecorder()
+
+	server.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Type"); !strings.Contains(got, "javascript") && !strings.Contains(got, "text/plain") {
+		t.Fatalf("content-type = %q, want javascript-like content type", got)
+	}
+	if !strings.Contains(rec.Body.String(), "loadFlags") {
+		t.Fatal("expected admin UI asset contents")
 	}
 }
 
@@ -700,6 +814,7 @@ func BenchmarkEvaluate(b *testing.B) {
 
 	body := encodeJSON(req)
 
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		body.Reset()

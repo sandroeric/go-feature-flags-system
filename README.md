@@ -115,6 +115,25 @@ postgres://launchdarkly:launchdarkly@postgres:5432/launchdarkly?sslmode=disable
 
 PostgreSQL data is stored in a named Docker volume called `launchdarkly_postgres-data`.
 
+## Admin UI
+
+Phase 12 adds an embedded admin UI served by the Go API at:
+
+```text
+http://localhost:8080/app
+```
+
+The UI supports:
+
+- browsing existing flags
+- creating and editing flags
+- editing rollout variants and weights
+- editing targeting rules and priorities
+- deleting flags
+- viewing flag version, enabled state, and store health
+
+It talks directly to the existing admin APIs, so the same validation rules and versioning behavior apply in both the UI and raw HTTP workflows.
+
 ## Database
 
 When `DATABASE_URL` is set, the server opens PostgreSQL and applies embedded migrations at startup. Docker Compose provides the expected local database URL automatically.
@@ -413,6 +432,19 @@ The sync process ensures that:
 2. Evaluation continues even if a sync fails
 3. Store generation increments after each successful sync
 
+## Observability
+
+Phase 11 adds a lightweight `/metrics` endpoint backed by atomic counters and latency buckets. It tracks:
+
+- evaluation count
+- unknown flag count
+- sync success and failure counts
+- current store generation and version
+- last refresh duration
+- approximate evaluation latency `p50` / `p95` / `p99`
+
+The `/evaluate` hot path is intentionally not logged per request, so observability work stays out of the critical path and relies on in-memory metrics instead.
+
 ### Configuration
 
 Set `SYNC_INTERVAL` to control polling frequency:
@@ -449,4 +481,42 @@ make test
 make bench
 ```
 
-Current evaluator benchmarks target zero allocations in the hot path.
+On April 29, 2026, Phase 11 verification produced:
+
+| Benchmark | Result | Memory |
+| --- | --- | --- |
+| `internal/eval.BenchmarkEvaluateRuleMatch` | `4.953 ns/op` | `0 B/op`, `0 allocs/op` |
+| `internal/eval.BenchmarkEvaluateRollout` | `11.21 ns/op` | `0 B/op`, `0 allocs/op` |
+| `internal/store.BenchmarkStoreLookup` | `3.287 ns/op` | `0 B/op`, `0 allocs/op` |
+| `internal/store.BenchmarkHolderEvaluate` | `11.81 ns/op` | `0 B/op`, `0 allocs/op` |
+| `internal/api.BenchmarkEvaluate` | `3831 ns/op` | `7309 B/op`, `33 allocs/op` |
+
+These numbers come from:
+
+```bash
+go test -run=^$ -bench='BenchmarkEvaluate(RuleMatch|Rollout)$' -benchmem ./internal/eval
+go test -run=^$ -bench='Benchmark(HolderEvaluate|StoreLookup)$' -benchmem ./internal/store
+go test -run=^$ -bench='BenchmarkEvaluate$' -benchmem ./internal/api
+```
+
+`ns/op`, `B/op`, and `allocs/op` are reported directly by Go's benchmark harness. The evaluator and store benchmarks hit zero allocations in the hot path, while the HTTP benchmark intentionally captures end-to-end handler overhead.
+
+Profiling note: the HTTP benchmark allocations are dominated by `httptest.NewRequest`, request parsing, and JSON encode/decode work rather than the in-memory flag evaluation itself. Reproduce the profile with:
+
+```bash
+make bench-profile
+```
+
+## Load Test
+
+Run a 10k+ HTTP evaluation load test with percentile output:
+
+```bash
+make loadtest
+```
+
+You can also call it directly:
+
+```bash
+go run ./cmd/loadtest -base-url=http://localhost:8080 -requests=10000 -concurrency=50
+```

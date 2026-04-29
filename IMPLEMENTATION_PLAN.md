@@ -287,41 +287,41 @@ variant := client.Eval("checkout", user)
 
 Goal: Prove the design behaves predictably under load.
 
-- [ ] Add benchmarks:
-  - [ ] evaluator only
-  - [ ] store lookup + evaluator
-  - [ ] HTTP `/evaluate`
-- [ ] Track:
-  - [ ] `ns/op`
-  - [ ] `allocs/op`
-  - [ ] `B/op`
-- [ ] Add load test script for 10k+ evaluations.
-- [ ] Add p50/p95/p99 latency reporting.
-- [ ] Add metrics:
-  - [ ] evaluation count
-  - [ ] unknown flag count
-  - [ ] sync success/failure count
-  - [ ] current store version or generation
-  - [ ] refresh duration
-- [ ] Ensure logging does not block hot path.
-- [ ] Run race detector.
-- [ ] Profile CPU and memory if allocations appear.
-- [ ] Add README benchmark results.
+- [x] Add benchmarks:
+  - [x] evaluator only
+  - [x] store lookup + evaluator
+  - [x] HTTP `/evaluate`
+- [x] Track:
+  - [x] `ns/op`
+  - [x] `allocs/op`
+  - [x] `B/op`
+- [x] Add load test script for 10k+ evaluations.
+- [x] Add p50/p95/p99 latency reporting.
+- [x] Add metrics:
+  - [x] evaluation count
+  - [x] unknown flag count
+  - [x] sync success/failure count
+  - [x] current store version or generation
+  - [x] refresh duration
+- [x] Ensure logging does not block hot path.
+- [x] Run race detector.
+- [x] Profile CPU and memory if allocations appear.
+- [x] Add README benchmark results.
 
 ## Phase 12: Optional React Admin UI
 
 Goal: Build the product surface mentioned in the document.
 
 - [ ] Create simple React frontend.
-- [ ] Add flag list page.
-- [ ] Add create/edit flag form.
-- [ ] Add variant editor.
-- [ ] Add rule editor.
-- [ ] Add rollout weight editor.
-- [ ] Show flag version.
-- [ ] Show enabled/disabled state.
-- [ ] Call admin APIs.
-- [ ] Add validation feedback in the UI.
+- [x] Add flag list page.
+- [x] Add create/edit flag form.
+- [x] Add variant editor.
+- [x] Add rule editor.
+- [x] Add rollout weight editor.
+- [x] Show flag version.
+- [x] Show enabled/disabled state.
+- [x] Call admin APIs.
+- [x] Add validation feedback in the UI.
 - [ ] Keep this phase optional until backend behavior is solid.
 
 ## Recommended Build Order

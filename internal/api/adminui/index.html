@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flag Workshop</title>
+    <link rel="stylesheet" href="/app/app.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Phase 12 Admin UI</p>
+          <h1>Flag Workshop</h1>
+          <p class="hero-text">
+            Shape targeting rules, tune rollout weights, and watch versions advance without leaving the control plane.
+          </p>
+        </div>
+        <div class="hero-status">
+          <div class="status-card">
+            <span class="label">Store Generation</span>
+            <strong id="store-generation">-</strong>
+          </div>
+          <div class="status-card">
+            <span class="label">Store Version</span>
+            <strong id="store-version">-</strong>
+          </div>
+          <div class="status-card wide">
+            <span class="label">Service</span>
+            <strong id="service-status">Loading...</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel flag-list-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-label">Flag Catalog</p>
+              <h2>Control Plane</h2>
+            </div>
+            <button id="new-flag-btn" class="ghost-btn" type="button">New Flag</button>
+          </div>
+          <div class="toolbar">
+            <input id="flag-search" type="search" placeholder="Search flags by key">
+            <button id="refresh-btn" class="secondary-btn" type="button">Refresh</button>
+          </div>
+          <div id="flag-list-empty" class="empty-state hidden">
+            No flags yet. Create one to start experimenting.
+          </div>
+          <div id="flag-list" class="flag-list"></div>
+        </section>
+
+        <section class="panel editor-panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-label">Flag Editor</p>
+              <h2 id="editor-title">Create a Flag</h2>
+            </div>
+            <div class="version-pill">
+              <span>Version</span>
+              <strong id="flag-version">0</strong>
+            </div>
+          </div>
+
+          <div id="banner" class="banner hidden"></div>
+          <div id="validation-errors" class="validation-box hidden"></div>
+
+          <form id="flag-form" class="editor-grid">
+            <label class="field">
+              <span>Flag Key</span>
+              <input id="flag-key" name="key" type="text" placeholder="checkout_flow">
+            </label>
+
+            <label class="field toggle-field">
+              <span>Enabled</span>
+              <button id="enabled-toggle" class="toggle-btn" type="button" aria-pressed="false">Disabled</button>
+            </label>
+
+            <label class="field">
+              <span>Default Variant</span>
+              <input id="flag-default" name="default" type="text" placeholder="control">
+            </label>
+
+            <div class="field full-width">
+              <div class="section-title">
+                <div>
+                  <span>Variants</span>
+                  <small id="variant-total">Total weight: 0</small>
+                </div>
+                <button id="add-variant-btn" class="secondary-btn" type="button">Add Variant</button>
+              </div>
+              <div id="variants" class="stack"></div>
+            </div>
+
+            <div class="field full-width">
+              <div class="section-title">
+                <div>
+                  <span>Rules</span>
+                  <small>Target by attribute, operator, values, and priority.</small>
+                </div>
+                <button id="add-rule-btn" class="secondary-btn" type="button">Add Rule</button>
+              </div>
+              <div id="rules" class="stack"></div>
+            </div>
+
+            <div class="action-row full-width">
+              <button id="save-btn" class="primary-btn" type="submit">Save Flag</button>
+              <button id="delete-btn" class="danger-btn" type="button">Delete</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <template id="variant-template">
+      <div class="row-card variant-row">
+        <label class="field">
+          <span>Name</span>
+          <input data-field="name" type="text" placeholder="control">
+        </label>
+        <label class="field weight-field">
+          <span>Weight</span>
+          <input data-field="weight" type="number" min="0" step="1" placeholder="50">
+        </label>
+        <button class="row-remove" data-action="remove" type="button" aria-label="Remove variant">Remove</button>
+      </div>
+    </template>
+
+    <template id="rule-template">
+      <div class="row-card rule-row">
+        <label class="field">
+          <span>Attribute</span>
+          <input data-field="attribute" type="text" placeholder="country">
+        </label>
+        <label class="field">
+          <span>Operator</span>
+          <select data-field="operator">
+            <option value="eq">eq</option>
+            <option value="in">in</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Values</span>
+          <input data-field="values" type="text" placeholder="BR, US">
+        </label>
+        <label class="field">
+          <span>Variant</span>
+          <input data-field="variant" type="text" placeholder="treatment">
+        </label>
+        <label class="field priority-field">
+          <span>Priority</span>
+          <input data-field="priority" type="number" min="0" step="1" placeholder="1">
+        </label>
+        <button class="row-remove" data-action="remove" type="button" aria-label="Remove rule">Remove</button>
+      </div>
+    </template>
+
+    <script src="/app/app.js" defer></script>
+  </body>
+</html>
